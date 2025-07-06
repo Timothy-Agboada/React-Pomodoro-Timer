@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 28: React Pomodoro Timer</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+</head>
+<body class="transition-colors duration-500">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+
+        const SESSIONS = {
+            work: { duration: 25 * 60, title: 'Work', color: 'bg-red-500', bodyBg: 'bg-red-100' },
+            shortBreak: { duration: 5 * 60, title: 'Short Break', color: 'bg-green-500', bodyBg: 'bg-green-100' },
+            longBreak: { duration: 15 * 60, title: 'Long Break', color: 'bg-blue-500', bodyBg: 'bg-blue-100' },
+        };
+
+        // --- Main App Component ---
+        const App = () => {
+            const [activeSession, setActiveSession] = React.useState('work');
+            const [timeRemaining, setTimeRemaining] = React.useState(SESSIONS.work.duration);
+            const [isActive, setIsActive] = React.useState(false);
+
+            const { duration, title, color, bodyBg } = SESSIONS[activeSession];
+
+            // --- The `useEffect` Hook for the Timer ---
+            React.useEffect(() => {
+                let interval = null;
+
+                if (isActive && timeRemaining > 0) {
+                    interval = setInterval(() => {
+                        setTimeRemaining(time => time - 1);
+                    }, 1000);
+                } else if (!isActive && timeRemaining !== 0) {
+                    clearInterval(interval);
+                }
+                
+                if (timeRemaining === 0) {
+                    console.log(`${title} session finished!`);
+                    setIsActive(false);
+                }
+
+                // Cleanup function: crucial for timers!
+                return () => clearInterval(interval);
+            }, [isActive, timeRemaining, title]);
+
+            // --- `useEffect` for updating the document title ---
+            React.useEffect(() => {
+                 const minutes = Math.floor(timeRemaining / 60);
+                 const seconds = timeRemaining % 60;
+                 document.title = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} - ${title}`;
+            }, [timeRemaining, title]);
+            
+             // --- `useEffect` for updating the body background ---
+            React.useEffect(() => {
+                document.body.className = `transition-colors duration-500 flex items-center justify-center min-h-screen p-4 ${bodyBg}`;
+            }, [bodyBg]);
+
+
+            const toggleTimer = () => {
+                setIsActive(!isActive);
+            };
+
+            const resetTimer = () => {
+                setIsActive(false);
+                setTimeRemaining(duration);
+            };
+            
+            const selectSession = (sessionKey) => {
+                setIsActive(false);
+                setActiveSession(sessionKey);
+                setTimeRemaining(SESSIONS[sessionKey].duration);
+            }
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                return `${mins}:${secs}`;
+            };
+
+            return (
+                <div className="bg-white/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
+                    <h1 className="text-4xl font-bold text-gray-800 mb-6">Pomodoro Timer</h1>
+                    
+                    <div className="flex justify-center gap-2 bg-gray-200 rounded-full p-1 mb-8">
+                        {Object.keys(SESSIONS).map(key => (
+                            <button
+                                key={key}
+                                onClick={() => selectSession(key)}
+                                className={`w-full py-2 px-4 rounded-full font-semibold transition-all duration-300 ${activeSession === key ? `text-white shadow-lg ${color}` : 'text-gray-500 hover:bg-gray-300'}`}
+                            >
+                                {SESSIONS[key].title}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    <div className="text-8xl font-bold text-gray-900 mb-8">
+                        {formatTime(timeRemaining)}
+                    </div>
+
+                    <div className="flex justify-center gap-4">
+                        <button
+                            onClick={toggleTimer}
+                            className={`w-36 text-2xl font-bold uppercase py-4 rounded-lg text-white shadow-lg hover:opacity-90 transition-opacity ${color}`}
+                        >
+                            {isActive ? 'Pause' : 'Start'}
+                        </button>
+                        <button onClick={resetTimer} className="text-gray-500 hover:text-gray-800">
+                            <i className="fas fa-redo text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Rendering the App ---
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+
+</body>
+</html>
